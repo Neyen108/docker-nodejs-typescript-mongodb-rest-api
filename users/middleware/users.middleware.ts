@@ -43,7 +43,7 @@ class UsersMiddleware {
     ) {
         const user = await usersService.getUserByEmail(req.body.email);
 
-        if (user && user.id === req.params.userId) {
+        if (user && user._id === req.params.userId) {
             next();
         } else {
             res.status(400).send({
