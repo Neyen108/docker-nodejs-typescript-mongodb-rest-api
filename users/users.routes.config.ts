@@ -5,6 +5,10 @@ import BodyValidationMiddleware from "../common/middleware/body.validation.middl
 import express from "express";
 import { body } from "express-validator";
 
+import jwtMiddleware from "../auth/middleware/jwt.middleware";
+import { PermissionFlag } from "../common/middleware/common.permissionflag.enum";
+import permissionMiddleware from "../common/middleware/common.permission.middleware";
+
 //importing the CommonRoutesConfig class and extending it to the UsersRoutes class
 //This example is quite simple, but when scaling to create several route files, this will help us avoid duplicate code.
 //Suppose we would want to add new features in this file, such as logging.
@@ -17,7 +21,13 @@ export class UsersRoutes extends CommonRoutesConfig {
     configureRoutes(): express.Application {
         this.app
             .route("/users")
-            .get(UsersController.listUsers)
+            .get(
+                jwtMiddleware.validJWTNeeded,
+                permissionMiddleware.permissionFlagRequired(
+                    PermissionFlag.ADMIN_PERMISSION
+                ),
+                UsersController.listUsers
+            )
             .post(
                 body("email").isEmail(),
                 body("password")
@@ -32,7 +42,11 @@ export class UsersRoutes extends CommonRoutesConfig {
 
         this.app
             .route("/users/:userId")
-            .all(UsersMiddleware.validateUserExists)
+            .all(
+                UsersMiddleware.validateUserExists,
+                jwtMiddleware.validJWTNeeded,
+                permissionMiddleware.onlySameUserOrAdminCanDoThisAction
+            )
             .get(UsersController.getUserById)
             .delete(UsersController.removeUser);
 
@@ -46,6 +60,10 @@ export class UsersRoutes extends CommonRoutesConfig {
             body("permissionFlags").isInt(),
             BodyValidationMiddleware.verifyBodyFieldsErrors,
             UsersMiddleware.validateSameEmailBelongToSameUser,
+            UsersMiddleware.userCantChangePermission,
+            permissionMiddleware.permissionFlagRequired(
+                PermissionFlag.PAID_PERMISSION
+            ),
             UsersController.put,
         ]);
 
@@ -60,6 +78,10 @@ export class UsersRoutes extends CommonRoutesConfig {
             body("permissionFlags").isInt().optional(),
             BodyValidationMiddleware.verifyBodyFieldsErrors,
             UsersMiddleware.validatePatchEmail,
+            UsersMiddleware.userCantChangePermission,
+            permissionMiddleware.permissionFlagRequired(
+                PermissionFlag.PAID_PERMISSION
+            ),
             UsersController.patch,
         ]);
 
