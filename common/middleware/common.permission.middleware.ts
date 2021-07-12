@@ -16,7 +16,7 @@ class CommonPermissionMiddleware {
                     res.locals.jwt.permissionFlags
                 );
 
-                if (userPermissionFlags && requiredPermissionFlag) {
+                if (userPermissionFlags & requiredPermissionFlag) {
                     next();
                 } else {
                     res.status(403).send();
