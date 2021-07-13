@@ -68,7 +68,7 @@ export class UsersRoutes extends CommonRoutesConfig {
         ]);
 
         this.app.patch(`/users/:userId`, [
-            body("email").isEmail(),
+            body("email").isEmail().optional(),
             body("password")
                 .isLength({ min: 5 })
                 .withMessage("Must include password (5+ characters)")
@@ -83,6 +83,20 @@ export class UsersRoutes extends CommonRoutesConfig {
                 PermissionFlag.PAID_PERMISSION
             ),
             UsersController.patch,
+        ]);
+
+        this.app.put(`/users/:userId/permissionFlags/:permissionFlags`, [
+            jwtMiddleware.validJWTNeeded,
+            permissionMiddleware.onlySameUserOrAdminCanDoThisAction,
+
+            // Note: The above two pieces of middleware are needed despite
+            // the reference to them in the .all() call, because that only covers
+            // /users/:userId, not anything beneath it in the hierarchy
+
+            permissionMiddleware.permissionFlagRequired(
+                PermissionFlag.FREE_PERMISSION
+            ),
+            UsersController.updatePermissionFlags,
         ]);
 
         return this.app;
